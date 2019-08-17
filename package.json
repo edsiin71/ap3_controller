@@ -1,0 +1,21 @@
+{
+	"name": "ap3_controller",
+	"version": "1.0.0",
+	"description": "AP3 Contoller for Volumio",
+	"main": "index.js",
+	"scripts": {
+		"test": "echo \"Error: no test specified\" && exit 1"
+	},
+	"author": "EdSiin",
+	"license": "ISC",
+	"volumio_info": {
+		"prettyName": "ap3_controller",
+		"icon": "fa-lightbulb-o",
+		"plugin_type": "music_service"
+	},
+	"dependencies": {
+		"fs-extra": "^0.28.0",
+		"kew": "^0.7.0",
+		"v-conf": "^1.4.0"
+	}
+}

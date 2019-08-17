@@ -1,2 +1,6 @@
 # ap3_controller
-AP3 Controller PlugIn for Volumio
+# volumio-ap3-controller-plugin
+AP3 (AmPurify-3) Contoller for Volumio
+- Mode change
+- Volume Up/Down
+- Etc
