@@ -1,0 +1,36 @@
+{
+
+  "baseNavigation": {
+    "navigation": {
+      "prev": {
+        "uri": "/"
+      },
+      "lists": [
+        {
+        "availableListViews": [ "grid" ],
+        "items": [
+        ]
+        }
+      ]
+    }
+  },
+
+  "rootMenu": {
+    "down": {
+      "title": "Volume Down",
+      "uri": "ap3/down",
+      "icon": "fa fa-music"
+    },
+    "up": {
+      "title": "Volume Up",
+      "uri": "ap3/up",
+      "icon": "fa fa-music"
+    },
+    "sel": {
+      "title": "Select",
+      "uri": "ap3/sel",
+      "icon": "fa fa-map-signs"
+    }
+  }
+
+}

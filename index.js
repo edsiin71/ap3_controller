@@ -5,6 +5,7 @@ var fs=require('fs-extra');
 var config = new (require('v-conf'))();
 var exec = require('child_process').exec;
 var execSync = require('child_process').execSync;
+var Gpio = require("onoff").Gpio;
 
 
 module.exports = ap3Controller;
@@ -16,9 +17,12 @@ function ap3Controller(context) {
 	this.logger = this.context.logger;
 	this.configManager = this.context.configManager;
 
+	self.ap3sel;
+	self.ap3up;
+	self.ap3down;
+
+	self.logger.info("[ap3] constructor");
 }
-
-
 
 ap3Controller.prototype.onVolumioStart = function()
 {
@@ -27,18 +31,29 @@ ap3Controller.prototype.onVolumioStart = function()
 	this.config = new (require('v-conf'))();
 	this.config.loadFile(configFile);
 
-    return libQ.resolve();
+	self.logger.info("[ap3] onVolumioStart");
+
+	return libQ.resolve();
 }
 
 ap3Controller.prototype.onStart = function() {
     var self = this;
 	var defer=libQ.defer();
 
+	self.logger.info("[ap3] onStart");
+	self.logger.info("[ap3] onStart2");
+
+	self.loadAp3Resource();
+	self.addToBrowseSources();
+
+	self.createGPIO();
+
+	self.serviceName = "ap3_controller";
 
 	// Once the Plugin has successfull started resolve the promise
 	defer.resolve();
 
-    return defer.promise;
+	return defer.promise;
 };
 
 ap3Controller.prototype.onStop = function() {
@@ -48,12 +63,17 @@ ap3Controller.prototype.onStop = function() {
     // Once the Plugin has successfull stopped resolve the promise
     defer.resolve();
 
-    return libQ.resolve();
+	self.freeGPIO();
+
+	self.logger.info("[ap3] onStop");
+
+	return libQ.resolve();
 };
 
 ap3Controller.prototype.onRestart = function() {
     var self = this;
     // Optional, use if you need it
+	self.logger.info("[ap3] onRestart");
 };
 
 
@@ -63,7 +83,9 @@ ap3Controller.prototype.getUIConfig = function() {
     var defer = libQ.defer();
     var self = this;
 
-    var lang_code = this.commandRouter.sharedVars.get('language_code');
+	self.logger.info("[ap3] getUIConfig");
+
+	var lang_code = this.commandRouter.sharedVars.get('language_code');
 
     self.commandRouter.i18nJson(__dirname+'/i18n/strings_'+lang_code+'.json',
         __dirname+'/i18n/strings_en.json',
@@ -108,23 +130,90 @@ ap3Controller.prototype.setConf = function(varName, varValue) {
 
 
 ap3Controller.prototype.addToBrowseSources = function () {
+	var self = this;
 
-	// Use this function to add your music service plugin to music sources
-    //var data = {name: 'Spotify', uri: 'spotify',plugin_type:'music_service',plugin_name:'spop'};
-    this.commandRouter.volumioAddToBrowseSources(data);
+	//self.logger.info("[ap3] addToBrowseSources");
+
+	var data = {
+		name: 'AP3 Controller', 
+		uri: 'ap3', 
+		plugin_type:'music_service', 
+		plugin_name:'ap3_controller',
+		albumart: '/albumart?sourceicon=music_service/ap3_controller/ap3.svg'
+	};
+	this.commandRouter.volumioAddToBrowseSources(data);
+
 };
 
 ap3Controller.prototype.handleBrowseUri = function (curUri) {
     var self = this;
-
-    //self.commandRouter.logger.info(curUri);
     var response;
 
+    if (curUri.startsWith('ap3')) {
+        if (curUri == 'ap3') {
+			self.commandRouter.logger.info("ap3");
+			response = self.getRootContent();
+		}
+		else if (curUri === 'ap3/sel') {
+			self.commandRouter.logger.info("ap3/sel");
+			self.toggleGPIO('sel');
+			response = libQ.reject();
+		}
+		else if (curUri === 'ap3/up') {
+			self.commandRouter.logger.info("ap3/up");
+			self.toggleGPIO('up');
+			response = libQ.reject();
+		}
+		else if (curUri === 'ap3/down') {
+			self.commandRouter.logger.info("ap3/down");
+			self.toggleGPIO('down');
+			response = libQ.reject();
+		}
+		else {
+			response = libQ.reject();
+		}
+    }
 
-    return response;
+    return response;	
 };
 
 
+ap3Controller.prototype.loadAp3Resource = function() {
+	var self=this;
+  
+	var ap3Resource = fs.readJsonSync(__dirname+'/ap3_resources.json');
+
+	var baseNavigation = ap3Resource.baseNavigation;
+	self.rootNavigation = JSON.parse(JSON.stringify(baseNavigation));
+	self.rootNavigation.navigation.prev.uri = '/';
+
+	self.rootMenu = ap3Resource.rootMenu;
+}
+
+
+ap3Controller.prototype.getRootContent = function() {
+	var self=this;
+	var response;
+	var defer = libQ.defer();
+  
+	response = self.rootNavigation;
+	response.navigation.lists[0].items = [];
+	for (var key in self.rootMenu) {
+		var node = {
+			service: self.serviceName,
+			type: 'folder',
+			title: self.rootMenu[key].title,
+			icon: self.rootMenu[key].icon,
+			uri: self.rootMenu[key].uri
+		};
+		response.navigation.lists[0].items.push(node);
+	}
+
+	defer.resolve(response);
+
+	return defer.promise;
+  };
+  
 
 // Define a method to clear, add, and play an array of tracks
 ap3Controller.prototype.clearAddPlayTrack = function(track) {
@@ -187,7 +276,29 @@ ap3Controller.prototype.explodeUri = function(uri) {
 	var self = this;
 	var defer=libQ.defer();
 
+	self.commandRouter.logger.info("explodeUri");
+
 	// Mandatory: retrieve all info for a given URI
+	switch (uri) {
+		case 'ap3/sel': {
+			self.commandRouter.logger.info("ap3/sel");
+			defer.resolve();
+			break;
+		}
+		case 'ap3/up': {
+			self.commandRouter.logger.info("ap3/up");
+			defer.resolve();
+			break;
+		}
+		case 'ap3/down': {
+			self.commandRouter.logger.info("ap3/down");
+			defer.resolve();
+			break;
+		}
+		default: {
+			defer.resolve();
+		}
+	}
 
 	return defer.promise;
 };
@@ -264,4 +375,66 @@ ap3Controller.prototype.goto=function(data){
 // Handle go to artist and go to album function
 
      return defer.promise;
+};
+
+
+
+ap3Controller.prototype.createGPIO = function() {
+    var self = this;
+
+	self.ap3sel = new Gpio(23,'out');
+	self.ap3up = new Gpio(24,'out');
+	self.ap3down = new Gpio(15,'out');
+
+	self.ap3sel.writeSync(0);
+	self.ap3up.writeSync(0);
+	self.ap3down.writeSync(0);
+};
+
+ap3Controller.prototype.freeGPIO = function() {
+    var self = this;
+
+    self.ap3sel.unexport();
+    self.ap3up.unexport();
+    self.ap3down.unexport();
+};
+
+ap3Controller.prototype.toggleGPIO = function(gpio_name)
+{
+      var self = this;
+      var defer = libQ.defer();
+	  
+	  self.commandRouter.logger.info(gpio_name);
+
+	  switch(gpio_name) {
+		case 'sel': {
+			self.ap3sel.writeSync(1);
+			setTimeout(function() {
+				self.commandRouter.logger.info("GPIO done");
+				self.ap3sel.writeSync(0);
+				defer.resolve();
+			}, 1);
+			break;
+		}
+		case 'up': {
+			self.ap3up.writeSync(1);
+			setTimeout(function() {
+				self.commandRouter.logger.info("GPIO done");
+				self.ap3up.writeSync(0);
+				defer.resolve();
+			}, 1);
+			break;
+		}
+		case 'down': {
+			self.ap3down.writeSync(1);
+			setTimeout(function() {
+				self.commandRouter.logger.info("GPIO done");
+				self.ap3down.writeSync(0);
+				defer.resolve();
+			}, 1);
+			break;
+		}
+	  }
+
+      return defer;
 };
