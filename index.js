@@ -2,10 +2,10 @@
 
 var libQ = require('kew');
 var fs=require('fs-extra');
+var Gpio = require("onoff").Gpio;
 var config = new (require('v-conf'))();
 var exec = require('child_process').exec;
 var execSync = require('child_process').execSync;
-var Gpio = require("onoff").Gpio;
 
 
 module.exports = ap3Controller;
@@ -60,12 +60,13 @@ ap3Controller.prototype.onStop = function() {
     var self = this;
     var defer=libQ.defer();
 
-    // Once the Plugin has successfull stopped resolve the promise
-    defer.resolve();
-
 	self.freeGPIO();
 
 	self.logger.info("[ap3] onStop");
+
+	// Once the Plugin has successfull stopped resolve the promise
+    defer.resolve();
+
 
 	return libQ.resolve();
 };
@@ -151,21 +152,17 @@ ap3Controller.prototype.handleBrowseUri = function (curUri) {
 
     if (curUri.startsWith('ap3')) {
         if (curUri == 'ap3') {
-			self.commandRouter.logger.info("ap3");
 			response = self.getRootContent();
 		}
 		else if (curUri === 'ap3/sel') {
-			self.commandRouter.logger.info("ap3/sel");
 			self.toggleGPIO('sel');
 			response = libQ.reject();
 		}
 		else if (curUri === 'ap3/up') {
-			self.commandRouter.logger.info("ap3/up");
 			self.toggleGPIO('up');
 			response = libQ.reject();
 		}
 		else if (curUri === 'ap3/down') {
-			self.commandRouter.logger.info("ap3/down");
 			self.toggleGPIO('down');
 			response = libQ.reject();
 		}
@@ -385,6 +382,9 @@ ap3Controller.prototype.createGPIO = function() {
 	self.ap3sel = new Gpio(23,'out');
 	self.ap3up = new Gpio(24,'out');
 	self.ap3down = new Gpio(15,'out');
+	// self.ap3sel = new Gpio(23,'out'); // pinMode 4
+	// self.ap3up = new Gpio(24,'out'); // pinMode 5
+	// self.ap3down = new Gpio(17,'out'); // pinMode 0
 
 	self.ap3sel.writeSync(0);
 	self.ap3up.writeSync(0);
@@ -399,18 +399,15 @@ ap3Controller.prototype.freeGPIO = function() {
     self.ap3down.unexport();
 };
 
-ap3Controller.prototype.toggleGPIO = function(gpio_name)
+ap3Controller.prototype.toggleGPIO = function(action)
 {
-      var self = this;
-      var defer = libQ.defer();
-	  
-	  self.commandRouter.logger.info(gpio_name);
-
-	  switch(gpio_name) {
+	var self = this;
+	var defer = libQ.defer();
+	
+	switch(action) {
 		case 'sel': {
 			self.ap3sel.writeSync(1);
 			setTimeout(function() {
-				self.commandRouter.logger.info("GPIO done");
 				self.ap3sel.writeSync(0);
 				defer.resolve();
 			}, 1);
@@ -419,7 +416,6 @@ ap3Controller.prototype.toggleGPIO = function(gpio_name)
 		case 'up': {
 			self.ap3up.writeSync(1);
 			setTimeout(function() {
-				self.commandRouter.logger.info("GPIO done");
 				self.ap3up.writeSync(0);
 				defer.resolve();
 			}, 1);
@@ -428,13 +424,61 @@ ap3Controller.prototype.toggleGPIO = function(gpio_name)
 		case 'down': {
 			self.ap3down.writeSync(1);
 			setTimeout(function() {
-				self.commandRouter.logger.info("GPIO done");
 				self.ap3down.writeSync(0);
 				defer.resolve();
 			}, 1);
 			break;
 		}
-	  }
+	}
 
-      return defer;
+	// switch(action) {
+	// 	case 'onoff': {
+	// 		self.ap3up.writeSync(1);
+	// 		self.ap3down.writeSync(1);
+	// 		setTimeout(function() {
+	// 			self.ap3up.writeSync(0);
+	// 			self.ap3down.writeSync(0);
+	// 			defer.resolve();
+	// 		}, 1);
+	// 		break;
+	// 	}
+	// 	case 'sel': {
+	// 		self.ap3sel.writeSync(1);
+	// 		setTimeout(function() {
+	// 			self.ap3sel.writeSync(0);
+	// 			defer.resolve();
+	// 		}, 1);
+	// 		break;
+	// 	}
+	// 	case 'up': {
+	// 		self.ap3up.writeSync(1);
+	// 		setTimeout(function() {
+	// 			self.ap3up.writeSync(0);
+	// 			setTimeout(function() {
+	// 				self.ap3up.writeSync(1);
+	// 				setTimeout(function() {
+	// 					self.ap3up.writeSync(0);
+	// 					defer.resolve();
+	// 				}, 1);
+	// 			}, 1);
+	// 		}, 1);
+	// 		break;
+	// 	}
+	// 	case 'down': {
+	// 		self.ap3down.writeSync(1);
+	// 		setTimeout(function() {
+	// 			self.ap3down.writeSync(0);
+	// 			setTimeout(function() {
+	// 				self.ap3down.writeSync(1);
+	// 				setTimeout(function() {
+	// 					self.ap3down.writeSync(0);
+	// 					defer.resolve();
+	// 				}, 1);
+	// 			}, 1);
+	// 		}, 1);
+	// 		break;
+	// 	}
+	// }
+
+	return defer;
 };
