@@ -140,7 +140,7 @@ ap3Controller.prototype.addToBrowseSources = function () {
 		uri: 'ap3', 
 		plugin_type:'music_service', 
 		plugin_name:'ap3_controller',
-		albumart: '/albumart?sourceicon=music_service/ap3_controller/ap3.svg'
+		albumart: '/albumart?sourceicon=music_service/ap3_controller/ap3_controller.svg'
 	};
 	this.commandRouter.volumioAddToBrowseSources(data);
 
@@ -182,9 +182,9 @@ ap3Controller.prototype.loadAp3Resource = function() {
 
 	var baseNavigation = ap3Resource.baseNavigation;
 	self.rootNavigation = JSON.parse(JSON.stringify(baseNavigation));
-	self.rootNavigation.navigation.prev.uri = '/';
+	//self.rootNavigation.navigation.prev.uri = '/';
 
-	self.rootMenu = ap3Resource.rootMenu;
+	//self.rootMenu = ap3Resource.rootMenu;
 }
 
 
@@ -194,17 +194,6 @@ ap3Controller.prototype.getRootContent = function() {
 	var defer = libQ.defer();
   
 	response = self.rootNavigation;
-	response.navigation.lists[0].items = [];
-	for (var key in self.rootMenu) {
-		var node = {
-			service: self.serviceName,
-			type: 'folder',
-			title: self.rootMenu[key].title,
-			icon: self.rootMenu[key].icon,
-			uri: self.rootMenu[key].uri
-		};
-		response.navigation.lists[0].items.push(node);
-	}
 
 	defer.resolve(response);
 
