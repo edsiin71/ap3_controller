@@ -23,6 +23,11 @@
             "title": "Select",
             "uri": "ap3/sel",
             "icon": "fa fa-map-signs"
+          },
+          {
+            "title": "Stand-By",
+            "uri": "ap3/stb",
+            "icon": "fa fa-plug"
           }
         ]
         }

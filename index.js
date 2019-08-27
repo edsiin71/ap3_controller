@@ -20,8 +20,6 @@ function ap3Controller(context) {
 	self.ap3sel;
 	self.ap3up;
 	self.ap3down;
-
-	self.logger.info("[ap3] constructor");
 }
 
 ap3Controller.prototype.onVolumioStart = function()
@@ -31,17 +29,12 @@ ap3Controller.prototype.onVolumioStart = function()
 	this.config = new (require('v-conf'))();
 	this.config.loadFile(configFile);
 
-	self.logger.info("[ap3] onVolumioStart");
-
 	return libQ.resolve();
 }
 
 ap3Controller.prototype.onStart = function() {
     var self = this;
 	var defer=libQ.defer();
-
-	self.logger.info("[ap3] onStart");
-	self.logger.info("[ap3] onStart2");
 
 	self.loadAp3Resource();
 	self.addToBrowseSources();
@@ -62,11 +55,8 @@ ap3Controller.prototype.onStop = function() {
 
 	self.freeGPIO();
 
-	self.logger.info("[ap3] onStop");
-
 	// Once the Plugin has successfull stopped resolve the promise
     defer.resolve();
-
 
 	return libQ.resolve();
 };
@@ -74,7 +64,6 @@ ap3Controller.prototype.onStop = function() {
 ap3Controller.prototype.onRestart = function() {
     var self = this;
     // Optional, use if you need it
-	self.logger.info("[ap3] onRestart");
 };
 
 
@@ -84,8 +73,6 @@ ap3Controller.prototype.getUIConfig = function() {
     var defer = libQ.defer();
     var self = this;
 
-	self.logger.info("[ap3] getUIConfig");
-
 	var lang_code = this.commandRouter.sharedVars.get('language_code');
 
     self.commandRouter.i18nJson(__dirname+'/i18n/strings_'+lang_code+'.json',
@@ -93,8 +80,6 @@ ap3Controller.prototype.getUIConfig = function() {
         __dirname + '/UIConfig.json')
         .then(function(uiconf)
         {
-
-
             defer.resolve(uiconf);
         })
         .fail(function()
@@ -156,6 +141,10 @@ ap3Controller.prototype.handleBrowseUri = function (curUri) {
 		}
 		else if (curUri === 'ap3/sel') {
 			self.toggleGPIO('sel');
+			response = libQ.reject();
+		}
+		else if (curUri === 'ap3/stb') {
+			self.toggleGPIO('stb');
 			response = libQ.reject();
 		}
 		else if (curUri === 'ap3/up') {
@@ -271,6 +260,11 @@ ap3Controller.prototype.explodeUri = function(uri) {
 			defer.resolve();
 			break;
 		}
+		case 'ap3/stb': {
+			self.commandRouter.logger.info("ap3/stb");
+			defer.resolve();
+			break;
+		}
 		case 'ap3/up': {
 			self.commandRouter.logger.info("ap3/up");
 			defer.resolve();
@@ -370,10 +364,7 @@ ap3Controller.prototype.createGPIO = function() {
 
 	self.ap3sel = new Gpio(23,'out');
 	self.ap3up = new Gpio(24,'out');
-	self.ap3down = new Gpio(15,'out');
-	// self.ap3sel = new Gpio(23,'out'); // pinMode 4
-	// self.ap3up = new Gpio(24,'out'); // pinMode 5
-	// self.ap3down = new Gpio(17,'out'); // pinMode 0
+	self.ap3down = new Gpio(15,'out'); // 15:AP3 17:AP2
 
 	self.ap3sel.writeSync(0);
 	self.ap3up.writeSync(0);
@@ -393,7 +384,19 @@ ap3Controller.prototype.toggleGPIO = function(action)
 	var self = this;
 	var defer = libQ.defer();
 	
+	self.logger.info("[ap3] "+action);
+
 	switch(action) {
+		case 'stb': {
+			self.ap3up.writeSync(1);
+			self.ap3down.writeSync(1);
+			setTimeout(function() {
+				self.ap3up.writeSync(0);
+				self.ap3down.writeSync(0);
+				defer.resolve();
+			}, 1);
+			break;
+		}
 		case 'sel': {
 			self.ap3sel.writeSync(1);
 			setTimeout(function() {
@@ -406,7 +409,13 @@ ap3Controller.prototype.toggleGPIO = function(action)
 			self.ap3up.writeSync(1);
 			setTimeout(function() {
 				self.ap3up.writeSync(0);
-				defer.resolve();
+				setTimeout(function() {
+					self.ap3up.writeSync(1);
+					setTimeout(function() {
+						self.ap3up.writeSync(0);
+						defer.resolve();
+					}, 1);
+				}, 1);
 			}, 1);
 			break;
 		}
@@ -414,60 +423,17 @@ ap3Controller.prototype.toggleGPIO = function(action)
 			self.ap3down.writeSync(1);
 			setTimeout(function() {
 				self.ap3down.writeSync(0);
-				defer.resolve();
+				setTimeout(function() {
+					self.ap3down.writeSync(1);
+					setTimeout(function() {
+						self.ap3down.writeSync(0);
+						defer.resolve();
+					}, 1);
+				}, 1);
 			}, 1);
 			break;
 		}
 	}
-
-	// switch(action) {
-	// 	case 'onoff': {
-	// 		self.ap3up.writeSync(1);
-	// 		self.ap3down.writeSync(1);
-	// 		setTimeout(function() {
-	// 			self.ap3up.writeSync(0);
-	// 			self.ap3down.writeSync(0);
-	// 			defer.resolve();
-	// 		}, 1);
-	// 		break;
-	// 	}
-	// 	case 'sel': {
-	// 		self.ap3sel.writeSync(1);
-	// 		setTimeout(function() {
-	// 			self.ap3sel.writeSync(0);
-	// 			defer.resolve();
-	// 		}, 1);
-	// 		break;
-	// 	}
-	// 	case 'up': {
-	// 		self.ap3up.writeSync(1);
-	// 		setTimeout(function() {
-	// 			self.ap3up.writeSync(0);
-	// 			setTimeout(function() {
-	// 				self.ap3up.writeSync(1);
-	// 				setTimeout(function() {
-	// 					self.ap3up.writeSync(0);
-	// 					defer.resolve();
-	// 				}, 1);
-	// 			}, 1);
-	// 		}, 1);
-	// 		break;
-	// 	}
-	// 	case 'down': {
-	// 		self.ap3down.writeSync(1);
-	// 		setTimeout(function() {
-	// 			self.ap3down.writeSync(0);
-	// 			setTimeout(function() {
-	// 				self.ap3down.writeSync(1);
-	// 				setTimeout(function() {
-	// 					self.ap3down.writeSync(0);
-	// 					defer.resolve();
-	// 				}, 1);
-	// 			}, 1);
-	// 		}, 1);
-	// 		break;
-	// 	}
-	// }
 
 	return defer;
 };
