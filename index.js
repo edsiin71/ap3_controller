@@ -141,19 +141,19 @@ ap3Controller.prototype.handleBrowseUri = function (curUri) {
 		}
 		else if (curUri === 'ap3/sel') {
 			self.toggleGPIO('sel');
-			response = libQ.reject();
+			response = self.getRootContent();
 		}
 		else if (curUri === 'ap3/stb') {
 			self.toggleGPIO('stb');
-			response = libQ.reject();
+			response = self.getRootContent();
 		}
 		else if (curUri === 'ap3/up') {
 			self.toggleGPIO('up');
-			response = libQ.reject();
+			response = self.getRootContent();
 		}
 		else if (curUri === 'ap3/down') {
 			self.toggleGPIO('down');
-			response = libQ.reject();
+			response = self.getRootContent();
 		}
 		else {
 			response = libQ.reject();
@@ -359,7 +359,8 @@ ap3Controller.prototype.goto=function(data){
 
 
 
-ap3Controller.prototype.createGPIO = function() {
+ap3Controller.prototype.createGPIO = function() 
+{
     var self = this;
 
 	self.ap3sel = new Gpio(23,'out');
@@ -371,7 +372,8 @@ ap3Controller.prototype.createGPIO = function() {
 	self.ap3down.writeSync(0);
 };
 
-ap3Controller.prototype.freeGPIO = function() {
+ap3Controller.prototype.freeGPIO = function() 
+{
     var self = this;
 
     self.ap3sel.unexport();

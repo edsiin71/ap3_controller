@@ -1,6 +1,6 @@
 {
 	"name": "ap3_controller",
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"description": "AP3 Contoller for Volumio",
 	"main": "index.js",
 	"scripts": {
